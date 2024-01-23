@@ -36,24 +36,30 @@ var app = http.createServer(function(request,response){
       });
       
       }else{
-        fs.readdir('./data', function(error, filelist){
-          var filteredId=path.parse(queryData.get('id')).base;
-          var list=template.list(filelist);
-          fs.readFile(`data/${filteredId}`, 'utf8', function(err, description){
-            var title = queryData.get('id');
-            var sanitizedTitle=sanitizeHtml(title);
-            var sanitizedDescription=sanitizeHtml(description, {allowedTags:['h1']});
-            var html = template.html(sanitizedTitle, list, `<h2>${sanitizedTitle}</h2>${sanitizedDescription}`,
-            `<a href="/create">create</a> 
-            <a href="/update?id=${sanitizedTitle}"> update</a>
+    db.query(`SELECT * FROM topic`,function(error,topics){
+      if(error){
+        throw error;
+      }
+      db.query(`SELECT * FROM topic WHERE id=?`,[queryData.get('id')], function(error2,topic){
+        if(error2){
+          throw error2;
+        }
+        var title=topic[0].title;
+        var description=topic[0].description;
+        var list=template.list(topics);
+        var html=template.html(title, list, 
+          `<h2>${title}</h2>${description}`,
+        `<a href="/create">create</a>        
+              <a href="/update?id=${queryData.get('id')}"> update</a>
             <form action="delete_process" method="post" >
-            <input type="hidden" name="id" value="${sanitizedTitle}">
+            <input type="hidden" name="id" value="${queryData.get('id')}">
             <input type="submit" value="delete">
-            </form>`
-            );
-            response.writeHead(200);
-            response.end(html);
-      });
+              </form>`
+        );
+        response.writeHead(200);
+        response.end(html);
+        })
+      
     });
   }
     }else if(pathname === '/create'){
